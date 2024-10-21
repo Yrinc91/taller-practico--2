@@ -1,0 +1,29 @@
+name: NASA Image Populary
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  fetch-nasa-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install requests
+      - name: Load JSON data
+        id: load_json
+        run: |
+          import json
+          with open('dates.json', 'r') as f:
+            dates = json.load(f)
+          echo "dates=${{ toJson(dates) }}" >> $GITHUB_OUTPUT
+      - name: Fetch images in parallel
+        run: |
+          dates_str=$(cat $GITHUB_OUTPUT | jq -r '.dates')
+          parallel -j 0 'python fetch_image.py {}' ::: $dates_str
